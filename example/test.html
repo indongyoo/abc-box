@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>abcjs - TEST</title>
+</head>
+<body>
+<script src="js/underscore.js"></script>
+<script src="js/jquery.js"></script>
+<script src="js/abc.js"></script>
+<script src="../abc.box.js"></script>
+<script>
+    !function(window, $, Box) {
+        window.box1 = new Box({
+            users: [
+                {name:'필정', id: 3, b:[{a:1}, {a:2}, {a:3}]},
+                {name:'필정', id: 3, b:[{a:1}, {a:2}, {a:3}]},
+                {name:'^^', id: 4, b:[{a:1}, {a:2}, {a:3}]}
+            ]
+        });
+        $(function() {
+            console.log(box1.find(document.getElementsByClassName('test_el')));
+            console.log(box1.find($('test_el')));
+            console.log(box1.find('users->0->b->2'));
+        });
+    }(window, $, Box);
+</script>
+<div class="test_el" box_selector="users -> (_.name=='^^') -> b->filter(_.a%2)->map((v) => v.a*10)"></div>
+</body>
+</html>
