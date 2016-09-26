@@ -98,5 +98,5 @@
         }
     }
 
-    C.lambda = window.lambda = functionalize;
+    C.lambda = functionalize;
 }(C));
