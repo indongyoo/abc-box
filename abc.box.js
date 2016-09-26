@@ -3,30 +3,26 @@
  */
 !function(root, cLambda) {
     function Box(data) {
-        this.cache = {};
-        this.__data__ = function() {
-            return data || {};
-        };
+        var cache = {};
+        this.__data__ = function() { return data || {}; };
+        this.__cache__ = function() { return cache; };
     }
 
-    Box.prototype.find = function(el) {
+    Box.prototype.find = function(el, is_init_cache) {
         if (!el || C.isArrayLike(el) && !el.length) return null;
-        if (C.isString(el)) return finder(this.__data__(), el);
-        el = C.isArrayLike(el) ? el[0] : el;
-        return finder(this.__data__(), el.getAttribute('box_selector'));
+        var str = (C.isString(el) ? el : (C.isArrayLike(el) ? el[0] : el).getAttribute('box_selector')),
+            cache = this.__cache__(), _data = finder(str, this.__data__()), _cache_val = cache[str];
+        return (is_init_cache || !_cache_val) ? (cache[str] = _data) : _cache_val;
     };
 
     Box.prototype.set = function(key, value) {
-        var is_string = C.isString(key);
+        var is_string = C.isString(key), k;
         if (is_string && arguments.length == 2) return this.__data__()[key] = value;
-        else if(!is_string && arguments.length == 1) for (var k in key) this.__data__()[k] = key[k];
+        else if(!is_string && arguments.length == 1) for (k in key) this.__data__()[k] = key[k];
+        return key;
     };
 
-    Box.prototype.get = function(key) {
-        return this.__data__()[key];
-    };
-
-    function finder(box_data, str) {
+    function finder(str, box_data) {
         return C.reduce(str.replace(/\s+->\s+|\s+->|->\s+/g, '->').split('->'), box_data, function(mem, key) {
             if (!key.match(/([a-z]+)?\((.+)\)/)) return mem[key];
             return C[RegExp.$1 || 'find'](mem, cLambda(RegExp.$2));
@@ -34,6 +30,17 @@
     }
 
     root.Box = Box;
+
+    //Box.prototype.get = function(key) {
+    //    if (C.isString(key) && arguments.length ==1) return this.__data__()[key];
+    //    else if (C.isArray(key)) return function(box_data, keys, obj) {
+    //        for (var i = 0, len = keys.length; i < len; i++) !function(key, obj) {
+    //            obj[key] = box_data[key]
+    //        }(keys[i], obj);
+    //        return obj;
+    //    }(this.__data__(), key, {});
+    //};
+
 }(typeof global == 'object' && global.global == global && (global.G = global) || window, function(C) {
     var __slice = Array.prototype.slice;
 

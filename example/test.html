@@ -5,7 +5,7 @@
     <title>abcjs - TEST</title>
 </head>
 <body>
-<script src="js/underscore.js"></script>
+<!--<script src="js/underscore.js"></script>-->
 <script src="js/jquery.js"></script>
 <script src="js/abc.js"></script>
 <script src="../abc.box.js"></script>
@@ -18,13 +18,42 @@
                 {name:'^^', id: 4, b:[{a:1}, {a:2}, {a:3}]}
             ]
         });
-        $(function() {
-            console.log(box1.find(document.getElementsByClassName('test_el')));
-            console.log(box1.find($('test_el')));
-            console.log(box1.find('users->0->b->2'));
+        box1.set('posts', [
+            {id: 1, like: 10},
+            {id: 2, like: 1},
+            {id: 3, like: 4}
+        ]);
+        box1.set({
+            reviews: [
+                {id: 1, title: '^^'},
+                {id: 2, title: ':-)'},
+                {id: 3, title: '3.3'}
+            ],
+            a: {
+                posts: box1.find('posts')
+            }
         });
+        console.log(box1.find('a->posts') == box1.find('posts')
+         && box1.__cache__()['a->posts'] == box1.find('posts')
+         && box1.__cache__()['posts'] == box1.find('a->posts')
+         && box1.find('a->posts') == box1.__data__()['posts']
+         && true); // true
+
+        box1.set('not work'); // not work;
+        box1.set('good work', []); // good work;
+        box1.set('very good work', {}); // very good work;
+
+        $(function() {
+            console.log(box1.find(document.getElementsByClassName('test_el'))); //[10, 30]
+            console.log(box1.find($('.test_el'))); // [10, 30]
+            console.log(box1.find('users->0->b->2')); // Object { a: 3 }
+            console.log(box1.find('posts->0')); // Object {id: 1, like: 10}
+            console.log(box1.find('reviews->(_.title=="^^")')); // Object {id: 1, title: "^^"}
+            console.log(box1.find('reviews->(_.title==":-)")') == box1.__cache__()['reviews->(_.title==":-)")']); //true
+        });
+
     }(window, $, Box);
 </script>
-<div class="test_el" box_selector="users -> (_.name=='^^') -> b->filter(_.a%2)->map((v) => v.a*10)"></div>
+<div class="test_el" box_selector="users -> (_.name=='^^')-> b->filter(_.a%2)->map((v) => v.a*10)"></div>
 </body>
 </html>
