@@ -27,7 +27,7 @@
   };
 
   function finder(str, box_data) {
-    return C.reduce(str.replace(/\s+->\s+|\s+->|->\s+/g, '->').split('->'), box_data, function (mem, key) {
+    return C.reduce(str.replace(/\s*->\s*/g, '->').split('->'), box_data, function (mem, key) {
       if (!key.match(/([a-z]+)?\((.+)\)/)) return mem[key];
       return C[RegExp.$1 || 'find'](mem, cLambda(RegExp.$2));
     });
