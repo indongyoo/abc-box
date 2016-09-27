@@ -5,52 +5,90 @@
   <title>abcjs - TEST</title>
 </head>
 <body>
-<!--<script src="js/underscore.js"></script>-->
+<script src="js/underscore.js"></script>
 <script src="js/jquery.js"></script>
 <script src="js/abc.js"></script>
 <script src="../abc.box.js"></script>
 <script>
   !function (window, $, Box) {
     var users = [
-      {name: '필정', id: 3, b: [{a: 1}, {a: 2}, {a: 3}]},
-      {name: '필정', id: 3, b: [{a: 1}, {a: 2}, {a: 3}]},
+      {name: '필정', id: 2, b: [{a: 1}, {a: 2}, {a: 3}]},
+      {name: '필정2', id: 3, b: [{a: 1}, {a: 2}, {a: 3}]},
       {name: '^^', id: 4, b: [{a: 1}, {a: 2}, {a: 3}]}
     ]; // data;
 
-    $(B(new Box('users', users), [
+    $(B.indent(new Box('users', users), [
       B.div(I, J([
         {id: 1, like: 10},
         {id: 2, like: 1},
         {id: 3, like: 4}
       ])),
       B.method('set', 'posts'),
-      function(box) {
+      function (box) {
         box.set({
           reviews: [
-            {id: 1, title: '^^'},
+            {id: 1, title: '^3^'},
             {id: 2, title: ':-)'},
             {id: 3, title: '3.3'}
           ],
-          a: {
-            posts: box.find('posts')
-          }
+          a: box.find('posts')
         });
         console.log(box.find('a->posts') == box.find('posts')
           && box.__cache__()['a->posts'] == box.find('posts')
           && box.__cache__()['posts'] == box.find('a->posts')
           && box.find('a->posts') == box.__data__()['posts']
           && true); // true
-    
+
         box.set('not work'); // not work;
-        box.set('good work', []); // good work;
+        box.set('good work', 3); // good work;
+        console.log(box.find('good work')); // '3'
+        box.set('good work', [], 'Set good work'); // good work;
+        console.log(box.find('good work'), 'but value is 3, because cache'); // '3' because cache
+        console.log(box.find('good work', true), 'seconds arg -> "true" modify cache'); // '[]' because cache
         box.set('very good work', {}); // very good work;
         console.log(box.find('users->0->b->2')); // Object { a: 3 }
         console.log(box.find('posts->0')); // Object {id: 1, like: 10}
-        console.log(box.find('reviews->(_.title=="^^")')); // Object {id: 1, title: "^^"}
+        console.log(box.find('reviews->(_.title=="^3^")')); // Object {id: 1, title: "^3^"}
+        box.find('reviews->(_.title=="^3^")').title='@.@';
+        console.log(box.find('reviews->(_.title=="^3^")')); // Object {id: 1, title: "@.@"}
         console.log(box.find('reviews->(_.title==":-)")') == box.__cache__()['reviews->(_.title==":-)")']); //true
-      }
+        return box;
+      },
+      C.lambda('(v) => MR(v, "TEST")'),
+      H('box, test', '\
+      .test \
+        h1 {{test}}\
+        .users[box_selector=users]\
+          {{{C(box._.users, ', H.each('user', '\
+          .user_item[box_selector="users->filter(val => val.id==!{user.id}!)"] {{user.name}}\
+          '), ')}}}\
+        <br>\
+        .reviews[box_selector=reviews]\
+          {{{C(box._.reviews, ', H.each('review', '\
+          .review_item[box_selector="reviews->(_.id==!{review.id}!)"] {{review.title}}\
+          '), ')}}}\
+        '), $,
+      B.m('appendTo', 'body'),
+      B.all([
+        B.all(
+          [X.this, B.val('args'), _.first],
+//          [B.m('find', '.user_item')]
+//        [B.m('find', '.user_item'), _.first]
+        [B.m('find', '.user_item:eq(1)'), _.first, B.m('getAttribute', 'box_selector')]
+        ),
+        B.m('find'),
+        C.log
+      ], [
+        B.all(
+          [X.this, B.val('args'), _.first],
+          [B.m('find', '.review_item')]
+//        [B.m('find', '.review_item'), _.first]
+//        [B.m('find', '.review_item'), _.first, B.m('getAttribute', 'box_selector')]
+        ),
+        B.m('find'),
+        C.log
+      ])
     ]));
-
   }(window, $, Box);
 </script>
 </body>

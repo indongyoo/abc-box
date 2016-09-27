@@ -10,6 +10,7 @@
     else if (!is_string && arguments.length == 1) for (k in key) data[k] = key[k];
     this.__data__ = function () { return data; };
     this.__cache__ = function () { return cache; };
+    this._ = data;
   }
 
   Box.prototype.find = function (el, is_init_cache) {
