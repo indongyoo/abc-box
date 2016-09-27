@@ -1,51 +1,8 @@
 /**
  * Created by piljung on 2016. 9. 26..
  */
-!function (root, cLambda) {
-  function Box(key, value) {
-    var cache = {};
-    var is_string = C.isString(key), k;
-    var data = {};
-    if (is_string && arguments.length == 2) data[key] = value;
-    else if (!is_string && arguments.length == 1) for (k in key) data[k] = key[k];
-    this.__data__ = function () { return data; };
-    this.__cache__ = function () { return cache; };
-    this._ = data;
-  }
-
-  Box.prototype.find = function (el, is_init_cache) {
-    if (!el || C.isArrayLike(el) && !el.length) return null;
-    var str = (C.isString(el) ? el : (C.isArrayLike(el) ? el[0] : el).getAttribute('box_selector'))
-      , cache = this.__cache__(), _data = finder(str, this.__data__()), _cache_val = cache[str];
-    return (is_init_cache || !_cache_val) ? (cache[str] = _data) : _cache_val;
-  };
-
-  Box.prototype.set = function (key, value) {
-    var is_string = C.isString(key), k;
-    if (is_string && arguments.length == 2) this.__data__()[key] = value;
-    else if (!is_string && arguments.length == 1) for (k in key) this.__data__()[k] = key[k];
-    return this;
-  };
-
-  function finder(str, box_data) {
-    return C.reduce(str.replace(/\s*->\s*/g, '->').split('->'), box_data, function (mem, key) {
-      if (!key.match(/([a-z]+)?\((.+)\)/)) return mem[key];
-      return C[RegExp.$1 || 'find'](mem, cLambda(RegExp.$2));
-    });
-  }
-
-  root.Box = Box;
-
-  //Box.prototype.get = function(key) {
-  //    if (C.isString(key) && arguments.length ==1) return this.__data__()[key];
-  //    else if (C.isArray(key)) return function(box_data, keys, obj) {
-  //        for (var i = 0, len = keys.length; i < len; i++) !function(key, obj) {
-  //            obj[key] = box_data[key]
-  //        }(keys[i], obj);
-  //        return obj;
-  //    }(this.__data__(), key, {});
-  //};
-
+!function (root, cLambda, makeConstructorBox) {
+  root.Box = makeConstructorBox(root, cLambda);
 }(typeof global == 'object' && global.global == global && (global.G = global) || window, function (C) {
   var __slice = Array.prototype.slice;
 
@@ -98,7 +55,7 @@
     }
     var f = new Function(params, 'return (' + expr + ')');
     return is_ ? f : f();
-  };
+  }
 
   function functionalize(fn) {
     if (typeof fn === 'function') {
@@ -119,4 +76,59 @@
   }
 
   return C.lambda = functionalize;
-}(C));
+}(C), function makeBox(root, cLambda) {
+  var Box = function Box(key, value) {
+    var cache = {};
+    var is_string = root.C.isString(key), k;
+    var data = {};
+    if (is_string && arguments.length == 2) data[key] = value;
+    else if (!is_string && arguments.length == 1) for (k in key) data[k] = key[k];
+    this.__data__ = function () { return data; };
+    this.__cache__ = function () { return cache; };
+    this._ = data;
+  };
+
+  Box.prototype.find = function (el, is_init_cache) {
+    if (!el || root.C.isArrayLike(el) && !el.length) return ;
+    var str = (root.C.isString(el) ? el : (root.C.isArrayLike(el) ? el[0] : el).getAttribute('box_selector'))
+      , cache = this.__cache__(), _data = finder(str, this.__data__()), _cache_val = cache[str];
+    return (is_init_cache || !_cache_val) ? (cache[str] = _data) : _cache_val;
+  };
+
+  Box.prototype.set = function (key, value) {
+    var is_string = root.C.isString(key), k;
+    if (is_string && arguments.length == 2) this.__data__()[key] = value;
+    else if (!is_string && arguments.length == 1) for (k in key) this.__data__()[k] = key[k];
+    return this;
+  };
+
+  Box.prototype.unset = function(selector, key) {
+    if (!key && arguments.length == 1) return root.C.unset(this.__data__(), selector);
+    else if (root.C.isString(key)) return root.C.unset(this.find(selector, true), key);
+  };
+
+  Box.prototype.remove = function(selector) {
+    var _arr = selector.split(/\s*->\s*/);
+    return root.C.remove(this.find(_arr.slice(0, _arr.length - 1).join('->'), true), this.find(selector, true));
+  };
+
+  function finder(str, box_data) {
+    return root.C.reduce(str.split(/\s*->\s*/), box_data, function (mem, key) {
+      if (!key.match(/([a-z]+)?\((.+)\)/)) return mem[key];
+      return C[RegExp.$1 || 'find'](mem, cLambda(RegExp.$2));
+    });
+  }
+
+  return Box;
+
+  //Box.prototype.get = function(key) {
+  //    if (root.C.isString(key) && arguments.length ==1) return this.__data__()[key];
+  //    else if (root.C.isArray(key)) return function(box_data, keys, obj) {
+  //        for (var i = 0, len = keys.length; i < len; i++) !function(key, obj) {
+  //            obj[key] = box_data[key]
+  //        }(keys[i], obj);
+  //        return obj;
+  //    }(this.__data__(), key, {});
+  //};
+
+});

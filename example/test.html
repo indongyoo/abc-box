@@ -17,7 +17,7 @@
       {name: '^^', id: 4, b: [{a: 1}, {a: 2}, {a: 3}]}
     ]; // data;
 
-    $(B.indent(new Box('users', users), [
+    $(B.indent(window.box = new Box('users', users), [
       B.div(I, J([
         {id: 1, like: 10},
         {id: 2, like: 1},
@@ -42,15 +42,23 @@
         box.set('not work'); // not work;
         box.set('good work', 3); // good work;
         console.log(box.find('good work')); // '3'
+
         box.set('good work', [], 'Set good work'); // good work;
         console.log(box.find('good work'), 'but value is 3, because cache'); // '3' because cache
+
         console.log(box.find('good work', true), 'seconds arg -> "true" modify cache'); // '[]' because cache
-        box.set('very good work', {}); // very good work;
+        box.set('very good work', { very: 'good' }); // very good work;
+
         console.log(box.find('users->0->b->2')); // Object { a: 3 }
         console.log(box.find('posts->0')); // Object {id: 1, like: 10}
+
         console.log(box.find('reviews->(_.title=="^3^")')); // Object {id: 1, title: "^3^"}
-        box.find('reviews->(_.title=="^3^")').title='@.@';
-        console.log(box.find('reviews->(_.title=="^3^")')); // Object {id: 1, title: "@.@"}
+        box.find('reviews->(_.title=="^3^")').title='@.@'; //set title (reviews->(_.title=="^3^")) == undefined
+        console.log(box.find('reviews->(_.title=="^3^")')); // but Object {id: 1, title: "@.@"} (cache)
+        console.log(box.find('reviews->(_.title=="^3^")', true)); // undefined
+
+        console.log(box.find('reviews->(_.title=="@.@")')); // Object {id: 1, title: "@.@"}
+
         console.log(box.find('reviews->(_.title==":-)")') == box.__cache__()['reviews->(_.title==":-)")']); //true
         return box;
       },
@@ -62,7 +70,7 @@
           {{{C(box._.users, ', H.each('user', '\
           .user_item[box_selector="users->filter(val => val.id==!{user.id}!)"] {{user.name}}\
           '), ')}}}\
-        <br>\
+        br\
         .reviews[box_selector=reviews]\
           {{{C(box._.reviews, ', H.each('review', '\
           .review_item[box_selector="reviews->(_.id==!{review.id}!)"] {{review.title}}\
