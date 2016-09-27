@@ -115,15 +115,4 @@
   };
 
   return Box;
-
-  //Box.prototype.get = function(key) {
-  //    if (root.C.isString(key) && arguments.length ==1) return this._()[key];
-  //    else if (root.C.isArray(key)) return function(box_data, keys, obj) {
-  //        for (var i = 0, len = keys.length; i < len; i++) !function(key, obj) {
-  //            obj[key] = box_data[key]
-  //        }(keys[i], obj);
-  //        return obj;
-  //    }(this._(), key, {});
-  //};
-
 });
