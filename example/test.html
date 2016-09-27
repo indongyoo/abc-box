@@ -67,12 +67,12 @@
       .test \
         h1 {{test}}\
         .users[box_selector=users]\
-          {{{C(box._.users, ', H.each('user', '\
+          {{{C(box._().users, ', H.each('user', '\
           .user_item[box_selector="users->filter(val => val.id==!{user.id}!)"] {{user.name}}\
           '), ')}}}\
         br\
         .reviews[box_selector=reviews]\
-          {{{C(box._.reviews, ', H.each('review', '\
+          {{{C(box._().reviews, ', H.each('review', '\
           .review_item[box_selector="reviews->(_.id==!{review.id}!)"] {{review.title}}\
           '), ')}}}\
         '), $,
