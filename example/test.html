@@ -60,6 +60,11 @@
         console.log(box.find('reviews->(_.title=="@.@")')); // Object {id: 1, title: "@.@"}
 
         console.log(box.find('reviews->(_.title==":-)")') == box.__cache__()['reviews->(_.title==":-)")']); //true
+
+        console.log(_.clone(box.find('reviews')));
+        console.log(box.remove('reviews->(_.id==3)'));
+        console.log(box.find('reviews'));
+
         return box;
       },
       C.lambda('(v) => MR(v, "TEST")'),
