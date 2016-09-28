@@ -4,13 +4,6 @@
 !function (root, cLambda, makeConstructorBox) {
   root.Box = makeConstructorBox(root, cLambda);
 }(typeof global == 'object' && global.global == global && (global.G = global) || window, function (C) {
-  var __slice = Array.prototype.slice;
-
-  // ## Functionalizing
-  //
-  // The utility functions operate on other functions. They can also operate on string
-  // abbreviations for functions by calling `functionalize(...)` on their inputs.
-
   // SHIM
   if ('ab'.split(/a*/).length < 2) {
     if (typeof console !== "undefined" && console !== null) {
@@ -19,6 +12,7 @@
   }
 
   function to_function(str) {
+    if (typeof str !== 'string') return str;
     var expr, leftSection, params, rightSection, sections, v, vars, _i, _len;
     params = [];
     expr = str;
@@ -57,25 +51,7 @@
     return is_ ? f : f();
   }
 
-  function functionalize(fn) {
-    if (typeof fn === 'function') {
-      return fn;
-    } else if (typeof fn === 'string' && /^[_a-zA-Z]\w*$/.test(fn)) {
-      return function () {
-        var args, receiver, _ref;
-        receiver = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-        return (_ref = receiver[fn]).call.apply(_ref, [receiver].concat(__slice.call(args)));
-      };
-    } else if (typeof fn.lambda === 'function') {
-      return fn.lambda();
-    } else if (typeof fn.toFunction === 'function') {
-      return fn.toFunction();
-    } else if (typeof fn === 'string') {
-      return to_function(fn);
-    }
-  }
-
-  return C.lambda = functionalize;
+  return C.lambda = to_function;
 }(C), function makeBox(root, cLambda) {
   var Box = function Box(key, value) {
     var cache = {};
