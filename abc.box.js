@@ -12,6 +12,7 @@
 !function (root, cLambda, makeConstructorBox) {
   root.Box = makeConstructorBox(root, cLambda);
 }(typeof global == 'object' && global.global == global && (global.G = global) || window, function (C) {
+  /* C.lambda forked raganwald/string-lambdas */
   return C.lambda = function (str) {
     if (typeof str !== 'string') return str;
     var expr, leftSection, params, rightSection, sections, v, vars, _i, _len;
