@@ -36,7 +36,7 @@
         console.log(box.find('a->posts') == box.find('posts')
           && box.__cache__()['a->posts'] == box.find('posts')
           && box.__cache__()['posts'] == box.find('a->posts')
-          && box.find('a->posts') == box.__data__()['posts']
+          && box.find('a->posts') == box._()['posts']
           && true); // true
 
         box.set('not work'); // not work;
@@ -52,17 +52,17 @@
         console.log(box.find('users->0->b->2')); // Object { a: 3 }
         console.log(box.find('posts->0')); // Object {id: 1, like: 10}
 
-        console.log(box.find('reviews->(_.title=="^3^")')); // Object {id: 1, title: "^3^"}
-        box.find('reviews->(_.title=="^3^")').title='@.@'; //set title (reviews->(_.title=="^3^")) == undefined
-        console.log(box.find('reviews->(_.title=="^3^")')); // but Object {id: 1, title: "@.@"} (cache)
-        console.log(box.find('reviews->(_.title=="^3^")', true)); // undefined
+        console.log(box.find('reviews->($.title=="^3^")')); // Object {id: 1, title: "^3^"}
+        box.find('reviews->($.title=="^3^")').title='@.@'; //set title (reviews->($.title=="^3^")) == undefined
+        console.log(box.find('reviews->($.title=="^3^")')); // but Object {id: 1, title: "@.@"} (cache)
+        console.log(box.find('reviews->($.title=="^3^")', true)); // undefined
 
-        console.log(box.find('reviews->(_.title=="@.@")')); // Object {id: 1, title: "@.@"}
+        console.log(box.find('reviews->($.title=="@.@")')); // Object {id: 1, title: "@.@"}
 
-        console.log(box.find('reviews->(_.title==":-)")') == box.__cache__()['reviews->(_.title==":-)")']); //true
+        console.log(box.find('reviews->($.title==":-)")') == box.__cache__()['reviews->($.title==":-)")']); //true
 
         console.log(_.clone(box.find('reviews')));
-        console.log(box.remove('reviews->(_.id==3)'));
+        console.log(box.remove('reviews->($.id==3)'));
         console.log(box.find('reviews'));
 
         return box;
@@ -78,7 +78,7 @@
         br\
         .reviews[box_selector=reviews]\
           {{{C(box._().reviews, ', H.each('review', '\
-          .review_item[box_selector="reviews->(_.id==!{review.id}!)"] {{review.title}}\
+          .review_item[box_selector="reviews->($.id==!{review.id}!)"] {{review.title}}\
           '), ')}}}\
         '), $,
       B.m('appendTo', 'body'),

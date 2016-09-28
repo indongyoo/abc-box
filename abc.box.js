@@ -14,20 +14,13 @@
 }(typeof global == 'object' && global.global == global && (global.G = global) || window, function (C) {
   return C.lambda = function (str) { // forked raganwald/string-lambdas
     if (typeof str !== 'string') return str;
-    var expr, leftSection, params, rightSection, sections, v, vars, _i, _len;
+    var expr, leftSection, params, rightSection, v, vars, _i, _len;
     params = [];
     expr = str;
-    sections = expr.split(/\s*->\s*/m);
     var is_ = false;
-    if (sections.length > 1) {
-      while (sections.length) {
-        expr = sections.pop();
-        params = sections.pop().split(/\s*,\s*|\s+/m);
-        sections.length && sections.push('(function(' + params + '){return (' + expr + ')})');
-      }
-    } else if (expr.match(/\b_\b/)) {
+    if (!expr.match(/=>/)) {
       is_ = true;
-      params = '_';
+      params = '$';
     } else {
       leftSection = expr.match(/^\s*(?:[+*\/%&|\^\.=<>]|!=)/m);
       rightSection = expr.match(/[+\-*\/%&|\^\.=<>!]\s*$/m);
@@ -73,7 +66,7 @@
   };
 
   Box.prototype.set = function (key, value) {
-    var is_string = root.C.isString(key), k;
+    var k, is_string = root.C.isString(key);
     if (is_string && arguments.length == 2) this._()[key] = value;
     else if (!is_string && arguments.length == 1) for (k in key) this._()[k] = key[k];
     return this;
