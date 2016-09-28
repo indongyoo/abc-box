@@ -1,17 +1,18 @@
-/**
- * Created by piljung on 2016. 9. 26..
- */
+// ABC project
+//  - https://github.com/marpple/abc-functional-javascript
+//  - https://github.com/marpple/abc-box
+// Project Lead - Indong Yoo
+// Maintainers - Piljung Park, Hanah Choi
+// Contributers - Byeoungjin Kim, Joeun Ha, Hoonil Kim
+
+// abc.js, abc.box.js
+// (c) 2015-2016 Marpple. MIT Licensed.
+
+//-------------------- abc.box.js -----------------------
 !function (root, cLambda, makeConstructorBox) {
   root.Box = makeConstructorBox(root, cLambda);
 }(typeof global == 'object' && global.global == global && (global.G = global) || window, function (C) {
-  // SHIM
-  if ('ab'.split(/a*/).length < 2) {
-    if (typeof console !== "undefined" && console !== null) {
-      console.log("Warning: IE6 split is not ECMAScript-compliant.  This breaks '->1'");
-    }
-  }
-
-  function to_function(str) {
+  return C.lambda = function (str) {
     if (typeof str !== 'string') return str;
     var expr, leftSection, params, rightSection, sections, v, vars, _i, _len;
     params = [];
@@ -49,9 +50,7 @@
     }
     var f = new Function(params, 'return (' + expr + ')');
     return is_ ? f : f();
-  }
-
-  return C.lambda = to_function;
+  };
 }(C), function makeBox(root, cLambda) {
   var Box = function Box(key, value) {
     var cache = {};
