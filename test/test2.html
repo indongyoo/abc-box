@@ -24,7 +24,8 @@
         {id: 3, like: 4}
       ])),
       B.method('set', 'posts'),
-      B.method('_'),
+      J(box),
+      B.m('_'),
       B(X, 'posts->($.id==2)->like', 2, C.sel.set),
       J(box),
       function (box) {
@@ -34,39 +35,39 @@
             {id: 2, title: ':-)'},
             {id: 3, title: '3.3'}
           ],
-          a: box.find('posts')
+          a: box.sel('posts')
         });
-        console.log(box.find('a->posts') == box.find('posts')
-          && box.__cache__()['a->posts'] == box.find('posts')
-          && box.__cache__()['posts'] == box.find('a->posts')
-          && box.find('a->posts') == box._()['posts']
+        console.log(box.sel('posts') == box.sel('posts')
+          && box.__cache__().posts == box.sel('posts')
+          && box.__cache__()['posts'] == box.sel('posts')
+          && box.sel('posts') == box._()['posts']
           && true); // true
 
         box.set('not work'); // not work;
         box.set('good work', 3); // good work;
-        console.log(box.find('good work')); // '3'
+        console.log(box.sel('good work')); // '3'
 
         box.set('good work', [], 'Set good work'); // good work;
-        console.log(box.find('good work'), 'but value is 3, because cache'); // '3' because cache
+        console.log(box.sel('good work'), 'but value is 3, because cache'); // '3' because cache
 
-        console.log(box.find('good work', true), 'seconds arg -> "true" modify cache'); // '[]' because cache
+        console.log(box.sel('good work', true), 'seconds arg -> "true" modify cache'); // '[]' because cache
         box.set('very good work', { very: 'good' }); // very good work;
 
-        console.log(box.find('users->0->b->2')); // Object { a: 3 }
-        console.log(box.find('posts->0')); // Object {id: 1, like: 10}
+        console.log(box.sel('users->0->b->2')); // Object { a: 3 }
+        console.log(box.sel('posts->0')); // Object {id: 1, like: 10}
 
-        console.log(box.find('reviews->($.title=="^3^")')); // Object {id: 1, title: "^3^"}
-        box.find('reviews->($.title=="^3^")').title='@.@'; //set title (reviews->($.title=="^3^")) == undefined
-        console.log(box.find('reviews->($.title=="^3^")')); // but Object {id: 1, title: "@.@"} (cache)
-        console.log(box.find('reviews->($.title=="^3^")', true)); // undefined
+        console.log(box.sel('reviews->($.title=="^3^")')); // Object {id: 1, title: "^3^"}
+        box.sel('reviews->($.title=="^3^")').title='@.@'; //set title (reviews->($.title=="^3^")) == undefined
+        console.log(box.sel('reviews->($.title=="^3^")')); // but Object {id: 1, title: "@.@"} (cache)
+        console.log(box.sel('reviews->($.title=="^3^")', true)); // undefined
 
-        console.log(box.find('reviews->($.title=="@.@")')); // Object {id: 1, title: "@.@"}
+        console.log(box.sel('reviews->($.title=="@.@")')); // Object {id: 1, title: "@.@"}
 
-        console.log(box.find('reviews->($.title==":-)")') == box.__cache__()['reviews->($.title==":-)")']); //true
+        console.log(box.sel('reviews->($.title==":-)")') == box.__cache__()['reviews->($.title==":-)")']); //true
 
-        console.log(_.clone(box.find('reviews')));
+        console.log(_.clone(box.sel('reviews')));
         console.log(box.remove('reviews->($.id==3)'));
-        console.log(box.find('reviews'));
+        console.log(box.sel('reviews'));
 
         return box;
       },
@@ -92,7 +93,7 @@
 //        [B.m('find', '.user_item'), _.first]
           [B.m('find', '.user_item:eq(1)'), _.first, B.m('getAttribute', 'box_selector')]
         ),
-        B.m('find'),
+        B.m('sel'),
         C.log
       ], [
         B.all(
@@ -101,7 +102,7 @@
 //        [B.m('find', '.review_item'), _.first]
 //        [B.m('find', '.review_item'), _.first, B.m('getAttribute', 'box_selector')]
         ),
-        B.m('find'),
+        B.m('sel'),
         C.log
       ])
     ]));
