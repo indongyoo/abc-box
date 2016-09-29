@@ -15,34 +15,27 @@
   return C.lambda = function (str) { // forked raganwald/string-lambdas
     if (typeof str !== 'string') return str;
     var expr, leftSection, params, rightSection, v, vars, _i, _len;
-    params = [];
-    expr = str;
-    var is_ = false;
-    if (!expr.match(/=>/)) {
-      is_ = true;
-      params = '$';
+    params = [], expr = str;
+    if (!expr.match(/=>/)) return new Function($, 'return (' + expr + ')');
+    leftSection = expr.match(/^\s*(?:[+*\/%&|\^\.=<>]|!=)/m);
+    rightSection = expr.match(/[+\-*\/%&|\^\.=<>!]\s*$/m);
+    if (leftSection || rightSection) {
+      if (leftSection) {
+        params.push('$1');
+        expr = '$1' + expr;
+      }
+      if (rightSection) {
+        params.push('$2');
+        expr = expr + '$2';
+      }
     } else {
-      leftSection = expr.match(/^\s*(?:[+*\/%&|\^\.=<>]|!=)/m);
-      rightSection = expr.match(/[+\-*\/%&|\^\.=<>!]\s*$/m);
-      if (leftSection || rightSection) {
-        if (leftSection) {
-          params.push('$1');
-          expr = '$1' + expr;
-        }
-        if (rightSection) {
-          params.push('$2');
-          expr = expr + '$2';
-        }
-      } else {
-        vars = str.replace(/(?:\b[A-Z]|\.[a-zA-Z_$])[a-zA-Z_$\d]*|[a-zA-Z_$][a-zA-Z_$\d]*\s*:|this|arguments|'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g, '').match(/([a-z_$][a-z_$\d]*)/gi) || [];
-        for (_i = 0, _len = vars.length; _i < _len; _i++) {
-          v = vars[_i];
-          params.indexOf(v) >= 0 || params.push(v);
-        }
+      vars = str.replace(/(?:\b[A-Z]|\.[a-zA-Z_$])[a-zA-Z_$\d]*|[a-zA-Z_$][a-zA-Z_$\d]*\s*:|this|arguments|'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g, '').match(/([a-z_$][a-z_$\d]*)/gi) || [];
+      for (_i = 0, _len = vars.length; _i < _len; _i++) {
+        v = vars[_i];
+        params.indexOf(v) >= 0 || params.push(v);
       }
     }
-    var f = new Function(params, 'return (' + expr + ')');
-    return is_ ? f : f();
+    return new Function(params, 'return (' + expr + ')')();
   };
 }(C), function makeBox(root, cLambda) {
   var Box = function Box(key, value) {
