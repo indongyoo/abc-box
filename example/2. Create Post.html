@@ -34,21 +34,19 @@
   $(function() {
     $('.post_editor').on('click', 'button', function(e) {
       var jq_post_editor = $(e.delegateTarget);
-
-      C(box.sel('posts'), {
+      C({
         id: ++id,
         body: jq_post_editor.find('input').val(),
         comment_count: 0
       }, [
-        B.args_pass(B.method('unshift', 'posts')),
-        C.args1,
+        B.args_pass('box.unshift("posts", $)'),
         C.wrap_arr,
         G.$post_$create,
         function() {
           jq_post_editor.find('input').val('');
           current_data();
         }
-      ])
+      ]);
     });
 
     $('.post_list').on('click', '.post_item .remove', function(e) {
