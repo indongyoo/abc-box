@@ -10,8 +10,8 @@
 
 //-------------------- abc.box.js -----------------------
 !function (root, makeConstructorBox) {
-  root.Box = makeConstructorBox(root, C.lambda);
-}(typeof global == 'object' && global.global == global && (global.G = global) || window, function makeBox(root, cLambda) {
+  root.Box = makeConstructorBox(root);
+}(typeof global == 'object' && global.global == global && (global.G = global) || window, function makeBox(root) {
   var Box = function Box(key, value) {
     var data = {}, cache = {};
     var is_string = root.C.isString(key), k;
@@ -24,28 +24,49 @@
   Box.prototype.find = function (el, is_init_cache) {
     if (!el || root.C.isArrayLike(el) && !el.length) return ;
     var str = (root.C.isString(el) ? el : (root.C.isArrayLike(el) ? el[0] : el).getAttribute('box_selector'));
-    var _data = root.C.reduce(str.split(/\s*->\s*/), this._(), function (mem, key) {
-      return !key.match(/([a-z]+)?\((.+)\)/) ? mem[key] : C[RegExp.$1 || 'find'](mem, cLambda(RegExp.$2));
-    });
+    var _data = root.C.select(this._(), str);
     var cache = this.__cache__(), _cache_val = cache[str];
     return (is_init_cache || !_cache_val) ? (cache[str] = _data) : _cache_val;
   };
 
-  Box.prototype.set = function (key, value) {
-    var k, is_string = root.C.isString(key);
-    if (is_string && arguments.length == 2) this._()[key] = value;
-    else if (!is_string && arguments.length == 1) for (k in key) this._()[k] = key[k];
+  function make_selector(el) {
+    return root.C.isString(el) ? el : (root.C.isArrayLike(el) ? el[0] : el).getAttribute('box_selector');
+  }
+
+  Box.prototype.set = function (el, value) {
+    if (arguments.length == 1 &&  root.C.isObject(el)) return root.C.extend(this._(), el) && this;
+    var selector = make_selector(el);
+    root.C.sel.set(this._(), selector, value);
+    this.find(selector, true);
     return this;
   };
 
-  Box.prototype.unset = function(selector, key) {
-    if (!key && arguments.length == 1) return root.C.unset(this._(), selector);
-    else if (root.C.isString(key)) return root.C.unset(this.find(selector, true), key);
+  Box.prototype.unset = function(el) {
+    var selector = make_selector(el);
+    root.C.sel.unset(this._(), selector);
+    this.find(selector, true);
+    return this;
   };
 
-  Box.prototype.remove = function(selector) {
-    var _arr = selector.split(/\s*->\s*/);
-    return root.C.remove(this.find(_arr.slice(0, _arr.length - 1).join('->'), true), this.find(selector, true));
+  Box.prototype.remove = function(el) {
+    var selector = make_selector(el);
+    root.C.sel.remove(this._(), selector);
+    this.find(selector, true);
+    return this;
+  };
+
+  Box.prototype.extend = function(el) {
+    var selector = make_selector(el);
+    root.C.sel.extend.apply(null, [this._(), selector].concat(root.C.toArray(arguments).slice(1, arguments.length)));
+    this.find(selector, true);
+    return this;
+  };
+
+  Box.prototype.defaults = function(el) {
+    var selector = make_selector(el);
+    root.C.sel.defaults.apply(null, [this._(), selector].concat(root.C.toArray(arguments).slice(1, arguments.length)));
+    this.find(selector, true);
+    return this;
   };
 
   return Box;

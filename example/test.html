@@ -18,12 +18,15 @@
     ]; // data;
 
     $(B.indent(window.box = new Box('users', users), [
-      B.div(I, J([
+      B.spread(I, J([
         {id: 1, like: 10},
         {id: 2, like: 1},
         {id: 3, like: 4}
       ])),
       B.method('set', 'posts'),
+      B.method('_'),
+      B(X, 'posts->($.id==2)->like', 2, C.sel.set),
+      J(box),
       function (box) {
         box.set({
           reviews: [

@@ -25,7 +25,16 @@
     F.S = window.S = S; // String Template Engine
     F.X = window.X = new Object();
 
-    C.lambda = I;
+    try { var has_lambda = true; eval('a=>a'); } catch (err) { var has_lambda = false; }
+    C.lambda = function (str) {
+        if (typeof str !== 'string') return str;
+        if (!str.match(/=>/)) return new Function('$', 'return (' + str + ')');
+        if (has_lambda) return eval(str); // es6 lambda
+        var ex_par = str.split(/\s*=>\s*/);
+        return new Function(
+          ex_par[0].replace(/(?:\b[A-Z]|\.[a-zA-Z_$])[a-zA-Z_$\d]*|[a-zA-Z_$][a-zA-Z_$\d]*\s*:|this|arguments|'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g, '').match(/([a-z_$][a-z_$\d]*)/gi) || [],
+          'return (' + ex_par[1] + ')');
+    };
     C.method = C.m = method; // for method
     C.args = function() { return arguments; };
     C.val = C.v = getValue; // get value with string
@@ -36,18 +45,63 @@
         return function() { return toMR(C.map(idxs, arguments, function(v, i, l, args) { return args[v]; })); };
     };
     C.args0 = I, C.args1 = B.args(1), C.args2 = B.args(2), C.args3 = B.args(3), C.args4 = B.args(4);
+    C.remove = function(arr, remove) { return MR(arr, removeByIndex(arr, arr.indexOf(remove))); };
+    C.unset = function(obj, key) { delete obj[key]; return obj; };
+    C.set = function(obj, key, value) { return obj[key] = value;};
+    C.extend = _.extend;
+    C.defaults = _.defaults;
 
-    var has_lambda = true;
-    try { eval('a=>a'); } catch (err) { has_lambda = false; }
-    C.lambda = function (str) {
-        if (typeof str !== 'string') return str;
-        if (!str.match(/=>/)) return new Function('$', 'return (' + str + ')');
-        if (has_lambda) return eval(str); // es6 lambda
-        var ex_par = str.split(/\s*=>\s*/);
-        return new Function(
-          ex_par[0].replace(/(?:\b[A-Z]|\.[a-zA-Z_$])[a-zA-Z_$\d]*|[a-zA-Z_$][a-zA-Z_$\d]*\s*:|this|arguments|'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g, '').match(/([a-z_$][a-z_$\d]*)/gi) || [],
-          'return (' + ex_par[1] + ')');
+    B.remove = B(X, C.remove);
+    B.unset = B(X, C.unset);
+    B.set = B(X, C.set);
+    B.extend = B(X, C.extend);
+    B.defaults = B(X, C.defaults);
+
+    C.sel = C.select = function(start, selector) {
+        return C.reduce(selector.split(/\s*->\s*/), start, function (mem, key) {
+            return !key.match(/([a-z]+)?\((.+)\)/) ? mem[key] : C[RegExp.$1 || 'find'](mem, C.lambda(RegExp.$2));
+        });
     };
+
+    C.sel.set = function(start, selector, value) {
+        var _arr = selector.split(/\s*->\s*/), last = _arr.length - 1;
+        return C.set(_arr.length == 1 ? start : C.sel(start, _arr.slice(0, last).join('->')), _arr[last], value);
+    };
+
+    C.sel.unset = function(start, selector) {
+        var _arr = selector.split(/\s*->\s*/), last = _arr.length - 1;
+        return C.unset(_arr.length == 1 ? start : C.sel(start, _arr.slice(0, last).join('->')), _arr[last]);
+    };
+
+    C.sel.remove = function(start, selector) {
+        var _arr = selector.split(/\s*->\s*/);
+        return C.remove(C.sel(start, _arr.slice(0, _arr.length - 1).join('->')), C.sel(start, selector));
+    };
+
+    C.sel.extend = function(start, selector/*, objs*/) {
+        return C.extend.apply(null, [C.sel(start, selector)].concat(_.toArray(arguments).slice(2, arguments.length)));
+    };
+
+    C.sel.defaults = function(start, selector/*, objs*/) {
+        return C.defaults.apply(null, [C.sel(start, selector)].concat(_.toArray(arguments).slice(2, arguments.length)));
+    };
+
+    B.sel = B.select = B(X, C.select);
+    B.sel.set = B(X, C.sel.set);
+    B.sel.unset = B(X, C.sel.unset);
+    B.sel.remove = B(X, C.sel.remove);
+    B.sel.extend = B(X, C.sel.extend);
+    B.sel.defaults = B(X, C.sel.defaults);
+
+
+    C.sel.pop = B('pop', arr_base_method);
+    C.sel.push = B('push', arr_base_method);
+    C.sel.shift = B('shift', arr_base_method);
+    C.sel.unshift = B('unshift', arr_base_method);
+
+    function arr_base_method(method, start, selector, item) {
+        return C.sel(start, selector)[method](item);
+    }
 
     function A(args, func) { return C.apply(arguments[2] || this, _.toArray(args).concat([func])); }
 
@@ -101,7 +155,7 @@
 
     var arg_add_arr = function(list) { return MR(list, []); };
     var all_map = B.map(function(val_fn, k, l, args) { return A(args, val_fn, this); });
-    var div_map = B.map(function(v, k, l, fns) { return A([v], fns[k] || I, this); });
+    var spread_map = B.map(function(v, k, l, fns) { return A([v], fns[k] || I, this); });
 
     B.all = function() {
         var fns = _.toArray(arguments);
@@ -110,12 +164,12 @@
         };
     };
 
-    B.div = function() {
+    B.spread = function() {
         var fns = _.toArray(arguments);
         return function() {
             var args = _.toArray(arguments);
             while (args.length < fns.length) args.push(void 0);
-            return A([args, fns], [div_map, arg_add_arr, spread_args, toMR], this);
+            return A([args, fns], [spread_map, arg_add_arr, spread_args, toMR], this);
         };
     };
 
@@ -247,8 +301,6 @@
     };
 
     B.uniq = function(iter) {
-        iter = C.lambda != I ? C.lambda(iter || I) : _.isString(iter) ?
-          (function(k) { return function(v) { return v[k]; }; })(iter) : (iter || I);
         return B(
           function(result, list, keys, i, res, tmp) { // body
               if (i == 0) return;
@@ -260,7 +312,7 @@
           JU,   // end_q
           void 0,   // end
           I, // complete
-          iter,
+          C.lambda(iter),
           base_loop_fn_base_args,
           base_loop_fn);
     };
@@ -303,7 +355,7 @@
         var args = _.rest(arguments, 6);
         var list = args.shift();
         var keys = _.isArray(list) ? null : _.keys(list);
-        iter_or_predi = iter_or_predi || args.pop();
+        iter_or_predi = iter_or_predi || C.lambda(args.pop());
         var length = (keys || list).length;
         var result = [], tmp = [];
         var resolve = I, async = false;
@@ -363,19 +415,19 @@
             if (i == fns.length) {
                 if (!promise) return res;
                 // 혹시 모두 동기로 끝나버려 then_rs가 아직 안들어온 경우 안전하게 한번 기다려주고
-                return resolve ? resolve(res) : setTimeout(function() { resolve && resolve(res); }, 0);
+                return resolve ? C.lambda(resolve)(res) : setTimeout(function() { resolve && C.lambda(resolve)(res); }, 0);
             }
 
             if (!isMR(res)) res = [res];
             try { // 동기 경우
-                if (!fns[i]._ABC_is_cb && !fns[i]._ABC_just_cb) return c(fns[i++].apply(context, C.args.trim(res)));
+                if (!fns[i]._ABC_is_cb && !fns[i]._ABC_just_cb) return c(C.lambda(fns[i++]).apply(context, C.args.trim(res)));
                 // 동기이고 그냥 callback, 혹시 생길 수 있는 비동기를 미리 잡기 위해서도 사용
-                if (!fns[i]._ABC_is_cb) return fns[i++].apply(context, C.args.trim(res).concat(function() { return c(toMR(arguments)); }));
+                if (!fns[i]._ABC_is_cb) return C.lambda(fns[i++]).apply(context, C.args.trim(res).concat(function() { return c(toMR(arguments)); }));
             } catch (e) { return c(ERR(e)); }
 
             // 비동기일 경우
             promise || (promise = hasPromise() ? new Promise(function(rs) { resolve = rs; }) : { then: function(rs) { resolve = rs; } });
-            try { fns[i++].apply(context, C.args.trim(res).concat(function() { arguments.length <= 1 ? c.apply(null, arguments) : c(toMR(arguments)); })); }
+            try { C.lambda(fns[i++]).apply(context, C.args.trim(res).concat(function() { arguments.length <= 1 ? c.apply(null, arguments) : c(toMR(arguments)); })); }
             catch (e) { c(ERR(e)); }
             return promise;
         })(toMR(args));
@@ -407,11 +459,11 @@
     C.uniq = B.uniq(null);
     C.toArray = C.to_array = _.toArray;
 
-    C.add = B2(C.arr_or_args_to_arr = IF(_.isArray, I).ELSE([C.args, C.to_array]), B.reduce(function(a, b) { return a + b; }));
-    C.sub = B2(C.arr_or_args_to_arr, B.reduce(function(a, b) { return a - b; }));
-    C.mod = B2(C.arr_or_args_to_arr, B.reduce(function(a, b) { return a % b; }));
-    C.mul = B2(C.arr_or_args_to_arr, B.reduce(function(a, b) { return a * b; }));
-    C.div = B2(C.arr_or_args_to_arr, B.reduce(function(a, b) { return a / b; }));
+    C.add = B2(C.arr_or_args_to_arr = IF(_.isArray, I).ELSE([C.args, C.to_array]), B.reduce('(a, b) => a + b'));
+    C.sub = B2(C.arr_or_args_to_arr, B.reduce('(a, b) => a - b'));
+    C.mod = B2(C.arr_or_args_to_arr, B.reduce('(a, b) => a % b'));
+    C.mul = B2(C.arr_or_args_to_arr, B.reduce('(a, b) => a * b'));
+    C.div = B2(C.arr_or_args_to_arr, B.reduce('(a, b) => a / b'));
 
     C.parseInt = C.parse_int = function(v) { return parseInt(v, 10); };
     C.parseIntAll = C.parse_int_all = B2(C.arr_or_args_to_arr, B.map(C.parse_int));
@@ -424,8 +476,8 @@
     C.and = B2(C.arr_or_args_to_arr, B.find_i(C.not), B.is(-1));
     C.or = B2(C.arr_or_args_to_arr, B.find(I), C.nnot);
 
-    C.eq = B2(C.arr_or_args_to_arr, B.find_i(function(v, i, a) { return a[0] != v; }), B.is(-1));
-    C.seq = B2(C.arr_or_args_to_arr, B.find_i(function(v, i, a) { return a[0] !== v; }), B.is(-1));
+    C.eq = B2(C.arr_or_args_to_arr, B.find_i(function(v, i, l) { return l[0] != v; }), B.is(-1));
+    C.seq = B2(C.arr_or_args_to_arr, B.find_i(function(v, i, l) { return l[0] !== v; }), B.is(-1));
     C.neq = B2(C.eq, C.not);
     C.sneq = B2(C.seq, C.not);
 
@@ -435,15 +487,8 @@
 
     C.isString = _.isString;
     C.isArray = _.isArray;
+    C.isObject = _.isObject;
     C.isArrayLike = _.isArrayLike;
-
-    C.remove = function(arr, remove) {
-        if (C.isArray(arr)) return MR(arr, removeByIndex(arr, arr.indexOf(remove)));
-        var find_key = C.find_key(arr, function(val) { return val==remove; });
-        return MR(arr, find_key !== undefined ? C.unset(arr, find_key) && remove : undefined);
-    };
-
-    C.unset = function(obj, key) { delete obj[key]; return obj; };
 
     !function(B, C, notices) {
         C.noti = C.Noti = C.notice =  {
@@ -454,7 +499,7 @@
             emitAll: emitAll
         };
 
-        B.noti = B.Noti = B.notice =  {
+        B.noti = B.Noti = B.notice = {
             on: function() {
                 var args = arguments;
                 return function(func) { return A(args.length === 3 ? args :  _.isFunction(func) ? _.toArray(args).concat(func) : args, on); };
@@ -472,7 +517,7 @@
                 var args = arguments;
                 return function(args2) { return A(args.length == 2 ? args : _.isArray(args2) ? _.toArray(args).concat([args2]) : args, emitAll) };
             }
-        };
+        }; B.noti.emit_all = emitAll;
 
         function on(name1, name2, func, is_once) {
             var _notice = notices[name1];
@@ -866,32 +911,11 @@ function respect_underscore(_) {
         };
     })(1, _.findIndex, _.sortedIndex);
 
-    var hasEnumBug = !{toString: null}.propertyIsEnumerable('toString');
-    var nonEnumerableProps = ['valueOf', 'isPrototypeOf', 'toString',
-        'propertyIsEnumerable', 'hasOwnProperty', 'toLocaleString'];
-
-    function collectNonEnumProps(obj, keys) {
-        var nonEnumIdx = nonEnumerableProps.length;
-        var constructor = obj.constructor;
-        var proto = (_.isFunction(constructor) && constructor.prototype) || ObjProto;
-
-        // Constructor is a special case.
-        var prop = 'constructor';
-        if (_.has(obj, prop) && !_.contains(keys, prop)) keys.push(prop);
-
-        while (nonEnumIdx--) {
-            prop = nonEnumerableProps[nonEnumIdx];
-            if (prop in obj && obj[prop] !== proto[prop] && !_.contains(keys, prop)) keys.push(prop);
-        }
-    }
-
     _.keys = function(obj) {
         if (!_.isObject(obj)) return [];
         if (nativeKeys) return nativeKeys(obj);
         var keys = [];
         for (var key in obj) if (_.has(obj, key)) keys.push(key);
-        // Ahem, IE < 9.
-        if (hasEnumBug) collectNonEnumProps(obj, keys);
         return keys;
     };
 
@@ -901,14 +925,23 @@ function respect_underscore(_) {
         return values;
     };
 
-    _.extend = createAssigner(function(obj) {
-        if (!_.isObject(obj)) return [];
-        var keys = [];
-        for (var key in obj) keys.push(key);
-        // Ahem, IE < 9.
-        if (hasEnumBug) collectNonEnumProps(obj, keys);
-        return keys;
-    });
+    function base_ex_de(is_de, obj1/* objs... */) {
+        if (obj1) return function ex_de_recursive(result, args, i) {
+            var shift = args[i];
+            if (!shift) return result;
+            if (!is_de) for (var key in shift) result[key] = shift[key];
+            else for (var key in shift) if (!result.hasOwnProperty(key)) result[key] = shift[key];
+            return ex_de_recursive(result, args, i+1);
+        }(obj1, arguments, 2);
+    }
+
+    _.extend = function(obj) {
+        return base_ex_de.apply(null, [false].concat(_.toArray(arguments)));
+    };
+
+    _.defaults = function(obj) {
+        return base_ex_de.apply(null, [true].concat(_.toArray(arguments)));
+    };
 
     _.clone = function(obj) {
         if (!_.isObject(obj)) return obj;
