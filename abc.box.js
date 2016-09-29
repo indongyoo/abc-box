@@ -12,11 +12,18 @@
 !function (root, cLambda, makeConstructorBox) {
   root.Box = makeConstructorBox(root, cLambda);
 }(typeof global == 'object' && global.global == global && (global.G = global) || window, function (C) {
+  var has_lambda = true;
+  try {
+    var a = a=>a;
+  } catch (err) {
+    has_lambda = false;
+  }
   return C.lambda = function (str) { // forked raganwald/string-lambdas
     if (typeof str !== 'string') return str;
     var expr, leftSection, params, rightSection, v, vars, _i, _len;
     params = [], expr = str;
-    if (!expr.match(/=>/)) return new Function($, 'return (' + expr + ')');
+    if (!expr.match(/=>/)) return new Function('$', 'return (' + expr + ')');
+    if (has_lambda) return eval(str);
     leftSection = expr.match(/^\s*(?:[+*\/%&|\^\.=<>]|!=)/m);
     rightSection = expr.match(/[+\-*\/%&|\^\.=<>!]\s*$/m);
     if (leftSection || rightSection) {
