@@ -10,14 +10,14 @@
 <script src="../example/js/abc.js"></script>
 <script src="../abc.box.js"></script>
 <script>
-  !function (window, $, Box) {
+  !function (window, $, create_box) {
     var users = [
       {name: '필정', id: 2, b: [{a: 1}, {a: 2}, {a: 3}]},
       {name: '필정2', id: 3, b: [{a: 1}, {a: 2}, {a: 3}]},
       {name: '^^', id: 4, b: [{a: 1}, {a: 2}, {a: 3}]}
     ]; // data;
 
-    $(B.indent(window.box = new Box('users', users), [
+    $(B.indent(window.box = create_box('users', users), [
       B.spread(I, J([
         {id: 1, like: 10},
         {id: 2, like: 1},
@@ -38,8 +38,6 @@
           a: box.sel('posts')
         });
         console.log(box.sel('posts') == box.sel('posts')
-          && box.__cache__().posts == box.sel('posts')
-          && box.__cache__()['posts'] == box.sel('posts')
           && box.sel('posts') == box._()['posts']
           && true); // true
 
@@ -62,8 +60,6 @@
         console.log(box.sel('reviews->($.title=="^3^")', true)); // undefined
 
         console.log(box.sel('reviews->($.title=="@.@")')); // Object {id: 1, title: "@.@"}
-
-        console.log(box.sel('reviews->($.title==":-)")') == box.__cache__()['reviews->($.title==":-)")']); //true
 
         console.log(_.clone(box.sel('reviews')));
         console.log(box.remove('reviews->($.id==3)'));
@@ -106,7 +102,7 @@
         C.log
       ])
     ]));
-  }(window, $, Box);
+  }(window, $, create_box);
 </script>
 </body>
 </html>
