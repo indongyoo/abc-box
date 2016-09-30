@@ -9,19 +9,20 @@
 <script src="js/jquery.js"></script>
 <script src="js/abc.js"></script>
 <script src="../abc.box.js"></script>
+
 <script>
   var current_data = function() { console.log(JSON.stringify(box.sel('posts'))); };
   var id = 2;
 
   // 서버에서 아래 html을 생성하기 위해 꺼냈던 data를 javascript 영역에 프린트 해두기
   window.box = create_box('posts', [
-    { id: 2, comment_count: 2 },
-    { id: 1, comment_count: 5 }
+    { id: 2, body: '포스트2', comment_count: 2 },
+    { id: 1, body: '포스트1', comment_count: 5 }
   ]);
 
   G.$post_$prepend = B2(C.wrap_arr,
     G.$t_$post_items = H.each('post', '\
-      .post_item#pi_!{post.id}![box_selector="posts->($.id==!{post.id}!)"]\
+      .post_item[box_selector="posts->($.id==!{post.id}!)"]\
         .body {{post.body}}\
         .options\
           button[type=button].remove 삭제'),
@@ -78,13 +79,13 @@
 
 <!-- 서버에서 생성한 html -->
 <div class="post_list">
-  <div class="post_item" data-id="2" box_selector="posts->($.id==2)">
+  <div class="post_item" box_selector="posts->($.id==2)">
     <div class="body">포스트2</div>
     <div class="options">
       <button type="button" class="remove">삭제</button>
     </div>
   </div>
-  <div class="post_item" data-id="1" box_selector="posts->($.id==1)">
+  <div class="post_item" box_selector="posts->($.id==1)">
     <div class="body">포스트1</div>
     <div class="options">
       <button type="button" class="remove">삭제</button>
