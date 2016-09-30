@@ -36,17 +36,23 @@
   Box.prototype.set = function (el, value) {
     if (arguments.length == 1 &&  root.C.isObject(el)) return root.C.extend(this._(), el) && this;
     var selector = make_selector(el);
-    return this.__cache__()[selector] = root.C.sel.set(this._(), selector, value);
+    var result = root.C.sel.set(this._(), selector, value);
+    this.__cache__()[selector] = result[0];
+    return result;
   };
 
   Box.prototype.unset = function(el) {
     var selector = make_selector(el);
-    return this.__cache__()[selector] = root.C.sel.unset(this._(), selector);
+    var result = root.C.sel.unset(this._(), selector);
+    this.__cache__()[selector] = result[0];
+    return result;
   };
 
   Box.prototype.remove = function(el) {
     var selector = make_selector(el);
-    return this.__cache__()[selector] = root.C.sel.remove(this._(), selector);
+    var result  = root.C.sel.remove(this._(), selector);
+    this.__cache__()[selector] = result[0];
+    return result;
   };
 
   Box.prototype.extend = function(el) {
