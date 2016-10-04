@@ -46,62 +46,119 @@
         return function() { return toMR(C.map(idxs, arguments, function(v, i, l, args) { return args[v]; })); };
     };
     C.args0 = I, C.args1 = B.args(1), C.args2 = B.args(2), C.args3 = B.args(3), C.args4 = B.args(4);
-    C.remove = function(arr, remove) { return MR(remove, removeByIndex(arr, arr.indexOf(remove)), arr); };
-    C.unset = function(obj, key) { var val = obj[key]; delete obj[key]; return MR(val, key, obj); };
+
     C.set = function(obj, key, value) { return MR(obj[key] = value, key, obj); };
+    C.unset = function(obj, key) { var val = obj[key]; delete obj[key]; return MR(val, key, obj); };
+    C.remove = function(arr, remove) { return MR(remove, removeByIndex(arr, arr.indexOf(remove)), arr); };
     C.extend = _.extend;
     C.defaults = _.defaults;
     C.pop = function(arr) { return MR(arr.pop(), arr.length, arr); };
     C.shift = function(arr) { return MR(arr.shift(), 0, arr); };
     C.push = function(arr, item) { return MR(item, arr.push(item), arr); };
     C.unshift = function(arr, item) { return MR(item, arr.unshift(item), arr); };
-
-    B.remove = B(X, C.remove);
-    B.unset = B(X, C.unset);
-    B.set = B(X, C.set);
-    B.extend = B(X, C.extend);
-    B.defaults = B(X, C.defaults);
-
-    C.sel = C.select = function(start, selector) {
+    C.sel = C.select = C.extend(function(start, selector) {
         return C.reduce(selector.split(/\s*->\s*/), start, function (mem, key) {
-            return !key.match(/([a-z]+)?\((.+)\)/) ? mem[key] : C[RegExp.$1 || 'find'](mem, C.lambda(RegExp.$2));
+            return !key.match(/^\((.+)\)/) ? !key.match(/\[(.*)\]/) ? mem[key] : function(mem, numbers) {
+                if (numbers.length > 2 || numbers.length < 1 || C.filter(numbers, [I, isNaN]).length) return ERR('[] selector in [num] or [num ~ num]');
+                var s = numbers[0], e = numbers[1];
+                return !e ? mem[s<0 ? mem.length+s : s] : Array.prototype.slice.call(mem, s<0 ? mem.length+s : s, e<0 ? mem.length+e : e + 1);
+            }(mem, C.map(RegExp.$1.replace(/\s/g, '').split('~'), [I, parseInt])) : C.find(mem, C.lambda(RegExp.$1));
         });
-    };
+    }, {
+        set: function(start, selector, value) {
+            var _arr = selector.split(/\s*->\s*/), last = _arr.length - 1;
+            return C.set(_arr.length == 1 ? start : C.sel(start, _arr.slice(0, last).join('->')), _arr[last], value);
+        },
+        unset: function(start, selector) {
+            var _arr = selector.split(/\s*->\s*/), last = _arr.length - 1;
+            return C.unset(_arr.length == 1 ? start : C.sel(start, _arr.slice(0, last).join('->')), _arr[last]);
+        },
+        remove: function(start, selector) {
+            var _arr = selector.split(/\s*->\s*/);
+            return C.remove(C.sel(start, _arr.slice(0, _arr.length - 1).join('->')), C.sel(start, selector));
+        },
+        extend: function(start, selector/*, objs*/) {
+            return C.extend.apply(null, [C.sel(start, selector)].concat(_.toArray(arguments).slice(2, arguments.length)));
+        },
+        defaults: function(start, selector/*, objs*/) {
+            return C.defaults.apply(null, [C.sel(start, selector)].concat(_.toArray(arguments).slice(2, arguments.length)));
+        },
+        pop: function(start, selector) { return C.pop(C.sel(start, selector)) },
+        shift: function(start, selector) { return C.shift(C.sel(start, selector)) },
+        push: function (start, selector, item) { return C.push(C.sel(start, selector), item); },
+        unshift: function (start, selector, item) { return C.unshift(C.sel(start, selector), item); }
+    });
+    C.sel.im = C.select.im =C.extend(function (start, selector) {
+        var im_start = _.clone(start);
+        return {
+            start: im_start,
+            selected: C.reduce(selector.split(/\s*->\s*/), im_start, function(clone, key) {
+                return !key.match(/^\((.+)\)/) ? !key.match(/\[(.*)\]/) ? clone[key] = _.clone(clone[key]) : function(clone, numbers) {
+                    if (numbers.length > 2 || numbers.length < 1 || C.filter(numbers, [I, isNaN]).length) return ERR('[] selector in [num] or [num ~ num]');
+                    var s = numbers[0], e = numbers[1];
+                    return !e ? clone[s] = _.clone(clone[s<0 ? clone.length+s : s]) : function(clone, oris) {
+                        return _.each(oris, function(ori) { clone[clone.indexOf(ori)] = _.clone(ori); });
+                    }(clone, Array.prototype.slice.call(clone, s<0 ? clone.length+s : s, e<0 ? clone.length+e : e + 1));
+                }(clone, C.map(RegExp.$1.replace(/\s/g, '').split('~'), [I, parseInt])) :
+                  function(clone, ori) { return clone[clone.indexOf(ori)] = _.clone(ori); } (clone, C.find(clone, C.lambda(RegExp.$1)))
+            })
+        };
+    }, {
+        set: function(start, selector, value) {
+            var _arr = selector.split(/\s*->\s*/), last = _arr.length - 1, im = C.sel.im(start, _arr.slice(0, last).join('->'));
+            return toMR([im.start].concat(C.set(_arr.length == 1 ? im.start : im.selected, _arr[last], value)));
+        },
+        unset: function(start, selector) {
+            var _arr = selector.split(/\s*->\s*/), last = _arr.length - 1, im = C.sel.im(start, _arr.slice(0, last).join('->'));
+            return toMR([im.start].concat(C.unset(_arr.length == 1 ? im.start : im.selected, _arr[last])));
+        },
+        remove: function(start, selector) {
+            var _arr = selector.split(/\s*->\s*/), im = C.sel.im(start, selector);
+            return toMR([im.start].concat(C.remove(C.sel(im.start, _arr.slice(0, _arr.length - 1).join('->')), im.selected)));
+        },
+        extend: function(start, selector/*, objs*/) {
+            var im = C.sel.im(start, selector);
+            return toMR([im.start].concat(C.extend.apply(null, [im.selected].concat(_.toArray(arguments).slice(2, arguments.length)))));
+        },
+        defaults: function(start, selector/*, objs*/) {
+            var im = C.sel.im(start, selector);
+            return toMR([im.start].concat(C.defaults.apply(null, [im.selected].concat(_.toArray(arguments).slice(2, arguments.length)))));
+        },
+        pop: function(start, selector) {
+            var im = C.sel.im(start, selector);
+            return toMR([im.start].concat(C.pop(im.selected)));
+        },
+        shift: function(start, selector) {
+            var im = C.sel.im(start, selector);
+            return toMR([im.start].concat(C.shift(im.selected)));
+        },
+        push: function (start, selector, item) {
+            var im = C.sel.im(start, selector);
+            return toMR([im.start].concat(C.push(im.selected, item)));
+        },
+        unshift: function (start, selector, item) {
+            var im = C.sel.im(start, selector);
+            return toMR([im.start].concat(C.unshift(im.selected, item)));
+        }
+    });
 
-    C.sel.set = function(start, selector, value) {
-        var _arr = selector.split(/\s*->\s*/), last = _arr.length - 1;
-        return C.set(_arr.length == 1 ? start : C.sel(start, _arr.slice(0, last).join('->')), _arr[last], value);
-    };
+    B.remove = function(remove) { return B(X, remove, C.remove); };
+    B.unset = function(key) { return B(X, key, C.unset); };
+    B.set = function(key, value) { return B(X, key, value, C.set); };
+    B.extend = function() { var args = _.toArray(arguments); return B.apply(null, [X].concat(args).concat(C.extend)); };
+    B.defaults = function() { var args = _.toArray(arguments); return B.apply(null, [X].concat(args).concat(C.defaults)); };
 
-    C.sel.unset = function(start, selector) {
-        var _arr = selector.split(/\s*->\s*/), last = _arr.length - 1;
-        return C.unset(_arr.length == 1 ? start : C.sel(start, _arr.slice(0, last).join('->')), _arr[last]);
-    };
+    B.sel = B.select = function(selector) { return B(X, selector, C.sel) };
+    B.sel.set = function(selector) { return B(X, selector, C.sel.set); };
+    B.sel.unset = function(selector) { return B(X, selector, C.sel.unset); };
+    B.sel.remove = function(selector) { return B(X, selector, C.sel.remove); };
+    B.sel.extend = function(selector) { var args = _.rest(arguments); return B.apply(null, [X, selector].concat(args).concat(C.sel.extend)); };
+    B.sel.defaults = function(selector) { var args = _.rest(arguments); return B.apply(null, [X, selector].concat(args).concat(C.sel.defaults)); };
 
-    C.sel.remove = function(start, selector) {
-        var _arr = selector.split(/\s*->\s*/);
-        return C.remove(C.sel(start, _arr.slice(0, _arr.length - 1).join('->')), C.sel(start, selector));
-    };
-
-    C.sel.extend = function(start, selector/*, objs*/) {
-        return C.extend.apply(null, [C.sel(start, selector)].concat(_.toArray(arguments).slice(2, arguments.length)));
-    };
-
-    C.sel.defaults = function(start, selector/*, objs*/) {
-        return C.defaults.apply(null, [C.sel(start, selector)].concat(_.toArray(arguments).slice(2, arguments.length)));
-    };
-
-    B.sel = B.select = B(X, C.select);
-    B.sel.set = B(X, C.sel.set);
-    B.sel.unset = B(X, C.sel.unset);
-    B.sel.remove = B(X, C.sel.remove);
-    B.sel.extend = B(X, C.sel.extend);
-    B.sel.defaults = B(X, C.sel.defaults);
-
-    C.sel.pop = function(start, selector) { return C.pop(C.sel(start, selector)) };
-    C.sel.shift = function(start, selector) { return C.shift(C.sel(start, selector)) };
-    C.sel.push = function (start, selector, item) { return C.push(C.sel(start, selector), item); };
-    C.sel.unshift = function (start, selector, item) { return C.unshift(C.sel(start, selector), item); };
+    B.sel.im = B.select.im = function(selector) { return B(X, selector, C.sel.im) };
+    B.sel.im.set = function(selector) { return B(X, selector, C.sel.im.set); };
+    B.sel.im.unset = function(selector) { return B(X, selector, C.sel.im.unset); };
+    B.sel.im.remove = function(selector) { return B(X, selector, C.sel.im.remove); };
 
     function A(args, func) { return C.apply(arguments[2] || this, _.toArray(args).concat([func])); }
 
@@ -351,9 +408,6 @@
         return [list[key], key, list];
     }
 
-    B.remove = function(remove) { return B(X, remove, C.remove); };
-    B.unset = function(key) { return B(X, key, C.unset); };
-
     function base_loop_fn(body, end_q, end, complete, iter_or_predi, params) {
         var context = this;
         var args = _.rest(arguments, 6);
@@ -364,14 +418,13 @@
         var result = [], tmp = [];
         var resolve = I, async = false;
         return (function f(i, res) {
-            res = body(result, list, keys, i, res, tmp, args);
-            if (end_q(res)) return resolve(end(list, keys, i));
-            if (i == length) return resolve(complete(result, list, res));
-
-            var res2 = A(params(list, keys, i, res).concat(args), iter_or_predi, context);
-            if (!maybe_promise(res2)) return f(i + 1, res2);
-            res2.then(function(res3) { f(i + 1, res3); });
-            return async || C(CB(function(cb) { resolve = cb; async = true; }));
+            do {
+                if (end_q(res = body(result, list, keys, i, res, tmp, args))) return resolve(end(list, keys, i));
+                if (i == length) return resolve(complete(result, list, res));
+                res = A(params(list, keys, i++, res).concat(args), iter_or_predi, context);
+            } while (!maybe_promise(res));
+            res.then(function(res) { f(i, res); });
+            return async || C(CB(function(cb) { resolve = cb, async = true; }));
         })(0);
     }
 
@@ -411,31 +464,27 @@
         var fns = I2(args.pop());
         if (args.length == 1 && isMR(args[0])) args = args[0];
 
-        var i = 0, promise = null, resolve = null;
+        var i = 0, promise = null, resolve = null, fns_len = fns.length;
+        function cp() { return hasPromise() ? new Promise(function(rs) { resolve = rs; }) : { then: function(rs) { resolve = rs; } } }
         return (function c(res) {
-            if (fns[i] && ((isERR(res) && !fns[i]._ABC_is_catch) || (!isERR(res) && fns[i]._ABC_is_catch)) && i++) return c(res);
-            if (unpack_promise(res, c)) return promise || (promise = hasPromise() ? new Promise(function(rs) { resolve = rs; }) : { then: function(rs) { resolve = rs; } });
+            do {
+                if (i === fns_len) return !promise ? res : resolve ? C.lambda(resolve)(res) : setTimeout(function() { resolve && C.lambda(resolve)(res); }, 0);
+                if (fns[i] && ((isERR(res) && !fns[i]._ABC_is_catch) || (!isERR(res) && fns[i]._ABC_is_catch)) && i++) continue;
+                if (unpack_promise(res, c)) return promise || (promise = cp());
+                try {
+                    if (!fns[i]._ABC_is_cb && !fns[i]._ABC_just_cb) res = C.lambda(fns[i++]).apply(context, C.args.trim(MRI(res)));
+                    else if (!fns[i]._ABC_is_cb) C.lambda(fns[i++]).apply(context, C.args.trim(MRI(res)).concat(function() { res = toMR(arguments); }));
+                } catch (e) { res = ERR(e); }
+            } while (i == fns_len || i < fns_len && !fns[i]._ABC_is_cb);
 
-            if (i == fns.length) {
-                if (!promise) return res;
-                // 혹시 모두 동기로 끝나버려 then_rs가 아직 안들어온 경우 안전하게 한번 기다려주고
-                return resolve ? C.lambda(resolve)(res) : setTimeout(function() { resolve && C.lambda(resolve)(res); }, 0);
-            }
-
-            if (!isMR(res)) res = [res];
-            try { // 동기 경우
-                if (!fns[i]._ABC_is_cb && !fns[i]._ABC_just_cb) return c(C.lambda(fns[i++]).apply(context, C.args.trim(res)));
-                // 동기이고 그냥 callback, 혹시 생길 수 있는 비동기를 미리 잡기 위해서도 사용
-                if (!fns[i]._ABC_is_cb) return C.lambda(fns[i++]).apply(context, C.args.trim(res).concat(function() { return c(toMR(arguments)); }));
-            } catch (e) { return c(ERR(e)); }
-
-            // 비동기일 경우
-            promise || (promise = hasPromise() ? new Promise(function(rs) { resolve = rs; }) : { then: function(rs) { resolve = rs; } });
-            try { C.lambda(fns[i++]).apply(context, C.args.trim(res).concat(function() { arguments.length <= 1 ? c.apply(null, arguments) : c(toMR(arguments)); })); }
+            if ((promise || (promise = cp())) && unpack_promise(res, c)) return promise;
+            try { C.lambda(fns[i++]).apply(context, C.args.trim(MRI(res)).concat(function() { arguments.length <= 1 ? c.apply(null, arguments) : c(toMR(arguments)); })); }
             catch (e) { c(ERR(e)); }
             return promise;
         })(toMR(args));
     }
+
+    function MRI(res) { return isMR(res) ? res : [res]; }
 
     function ERR(err, data) {
         setTimeout(function() { err._ABC_caught || C.error(err); }, 500);
@@ -676,7 +725,7 @@
     }
 
     function line(source, tag_stack) {
-        source = source.replace(new RegExp("^" + TABS() + "\\|"), "\n").replace(/^\s*/, "");
+        source = source.replace(new RegExp("^" + TABS() + "\\|"), "\n").replace(/^ */, "");
         return source.match(/^[\[.#\w\-]/) ? source.replace(/^(\[.*\]|\{.*?\}|\S)+ ?/, function(str) {
             return start_tag(str, tag_stack);
         }) : source;
@@ -935,6 +984,7 @@ function respect_underscore(_) {
         _.isFunction = function(obj) { return typeof obj == 'function' || false; };
 
     _.has = function(obj, key) { return obj != null && hasOwnProperty.call(obj, key); };
+    _.isNaN = function (obj) { return _.isNumber(obj) && obj !== +obj; };
 
     _.escape = (function(map) {
         var escaper = function(match) { return map[match]; };
