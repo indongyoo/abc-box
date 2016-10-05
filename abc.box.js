@@ -27,6 +27,7 @@
       var _cache_val = _box_cache[selector];
       return (is_init_cache || !_cache_val) ? (_box_cache[selector] = _data) : _cache_val;
     }
+
     return {
       _: function () { return _box_data; },
       select: select,
@@ -35,28 +36,32 @@
         if (arguments.length == 1 &&  root.C.isObject(el)) return root.C.extend(_box_data, el);
         var selector = make_selector(el);
         var result = root.C.sel.set(_box_data, selector, value);
-        _box_cache[selector] = result[0];
+        _box_cache[selector] = result[1];
         return result;
       },
       unset: function(el) {
         var selector = make_selector(el);
         var result = root.C.sel.unset(_box_data, selector);
-        _box_cache[selector] = result[0];
+        _box_cache[selector] = result[1];
         return result;
       },
       remove: function(el) {
         var selector = make_selector(el);
         var result  = root.C.sel.remove(_box_data, selector);
-        _box_cache[selector] = result[0];
+        _box_cache[selector] = result[1];
         return result;
       },
       extend: function(el) {
         var selector = make_selector(el);
-        return _box_cache[selector] = root.C.sel.extend.apply(null, [_box_data, selector].concat(root.C.toArray(arguments).slice(1, arguments.length)));
+        var result = root.C.sel.extend.apply(null, [_box_data, selector].concat(root.C.toArray(arguments).slice(1, arguments.length)));
+        _box_cache[selector] = result[1];
+        return result;
       },
       defaults: function(el) {
         var selector = make_selector(el);
-        return _box_cache[selector] = root.C.sel.defaults.apply(null, [_box_data, selector].concat(root.C.toArray(arguments).slice(1, arguments.length)));
+        var result = root.C.sel.defaults.apply(null, [_box_data, selector].concat(root.C.toArray(arguments).slice(1, arguments.length)));
+        _box_cache[selector] = result[1];
+        return result;
       },
       pop: function(el) {
         var selector = make_selector(el);
@@ -73,6 +78,38 @@
       unshift: function(el, item) {
         var selector = make_selector(el);
         return root.C.sel.unshift(_box_data, selector, item);
+      },
+      im: {
+        set: function (el, value) {
+          if (arguments.length > 1 || !root.C.isObject(el)) return root.create_box(root.C.sel.im.set(_box_data, make_selector(el), value)[0]);
+          return function(clone_create_box) {
+            root.C.extend(clone_create_box._(), el); return clone_create_box;
+          } (root.create_box(_box_data));
+        },
+        unset: function(el) {
+          return root.create_box(root.C.sel.im.unset(_box_data, make_selector(el))[0]);
+        },
+        remove: function(el) {
+          return root.create_box(root.C.sel.im.remove(_box_data, make_selector(el))[0]);
+        },
+        extend: function(el) {
+          return root.create_box(root.C.sel.im.extend.apply(null, [_box_data, make_selector(el)].concat(root.C.toArray(arguments).slice(1, arguments.length)))[0]);
+        },
+        defaults: function(el) {
+          return root.create_box(root.C.sel.im.defaults.apply(null, [_box_data, make_selector(el)].concat(root.C.toArray(arguments).slice(1, arguments.length)))[0]);
+        },
+        pop: function(el) {
+          return root.create_box(root.C.sel.im.pop(_box_data, make_selector(el))[0]);
+        },
+        push: function(el, item) {
+          return root.create_box(root.C.sel.im.push(_box_data, make_selector(el), item)[0]);
+        },
+        shift: function(el) {
+          return root.create_box(root.C.sel.im.shift(_box_data, make_selector(el))[0]);
+        },
+        unshift: function(el, item) {
+          return root.create_box(root.C.sel.im.unshift(_box_data, make_selector(el), item)[0]);
+        }
       }
     };
   };
